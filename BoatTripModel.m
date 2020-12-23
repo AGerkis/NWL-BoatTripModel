@@ -5,7 +5,8 @@
 clc; clear;
 
 Boat_Definition_Template;
-Yamaha_F70;
+Motor_Definition_Template;
+% Yamaha_F70;
 % Yamaha_F75;
 % Evinrude_135;
 
@@ -13,6 +14,7 @@ Yamaha_F70;
 roh = 999; % Density of Water (kg/m^3)
 g = 9.81; % Gravitational Constant (m/s^2)
 kv = 1.004e-6; % Kinematic Viscosity of Water at 20 degrees Celsius (m^2/s)
+hpToWatt = 735.5; % Conversion of horsepower to watts (1 hp = 735.5)
 
 % Declare needed symbolic variables
 syms clo;
@@ -31,7 +33,7 @@ delt = 1; % The time between iterations (s)
 tau = 0; % Trim Angle
 lambda = 0; % Mean Wetted Beam Length
 
-Fb = (Boat.mb + ml)*g; % The bouyant force (N)
+Fb = (Boat.mb + ml + Motor.mm)*g; % The bouyant force (N)
 Vdisp = Fb/(roh*g); % The volume of water displaced (m^3)
 z = Vdisp/(Boat.l*Boat.b); % How much of the boat is submerged (m)
 Astatic = z*w; % The static submerged frontal area 7(m^2)
@@ -46,9 +48,23 @@ while planing == 0
     if v > Boat.vplane
         planing = 1;
     else
-        Fd = 0.5*roh*A*Boat.Cd*v^2; % TODO: Replace this with Cf
+        R = Boat.l*v/kv; % Reynolds number (unitless)
+        Cf = 0.075/((log10(R) - 2)^2); % Schoenherr Turbulent Friction Coefficient, calculated from ITTC 1957 standards (unitless)
+        Fd = 0.5*roh*A*Boat.Cf*v^2;
         dprime = v*delt;
         w(i) = Fd*dprime;
+        
+        Preq = Fd*v; % Compute required power for given acceleration (W)
+        
+        % Verifies that the requested acceleration is possible by comparing
+        % required power to maximum motor horsepower. Exits the script if
+        % the required power exceeds maximum motor horsepower.
+        if Preq/hpToWatt > Motor.maxHP
+          disp('Model Failed. Maximum motor horsepower exceeded. Please input another acceleration map.');
+          disp('The current acceleration is:');
+          disp(accel(i));
+          quit(0);
+        end
     end
         
     i = i +1;

@@ -14,4 +14,3 @@ Boat.beta = 7; % Deadrise Angle (degrees)
 
 % Estimated Parameters
 Boat.vplane = 1.3*sqrt(Boat.l); % The velocity at which the boat starts to hydroplane (m/s)
-Boat.Cd = 0.5; % Coefficient of Drag
